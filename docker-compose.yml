@@ -1,44 +1,60 @@
 version: '3.9'
 services:
-  backend:
-    build: ./app
-    restart: always
-    depends_on:
-      - postgres
-      - redis
-    environment:
-      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/moysklad
-      - REDIS_URL=redis://redis:6379/0
-      - MOYSKLAD_TOKEN=your_moysklad_token
-    volumes:
-      - ./app:/app
-    command: uvicorn main:app --host 0.0.0.0 --port 8000
+  # Сервис backend удален, так как FastAPI приложение больше не используется напрямую
+  # backend:
+  #   build: ./app
+  #   restart: always
+  #   depends_on:
+  #     - postgres
+  #     - redis
+  #   environment:
+  #     - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/moysklad
+  #     - REDIS_URL=redis://redis:6379/0
+  #     - MOYSKLAD_TOKEN=your_moysklad_token
+  #     - WC_API_URL=your_wc_api_url
+  #     - WC_CONSUMER_KEY=your_wc_key
+  #     - WC_CONSUMER_SECRET=your_wc_secret
+  #   volumes:
+  #     - ./app:/app
+  #   command: uvicorn main:app --host 0.0.0.0 --port 8000
 
   celery:
     build: ./app
+    restart: always # Добавляем restart: always для воркера
     depends_on:
-      - backend
+      - postgres # Зависит только от postgres и redis
       - redis
-    command: celery -A worker.app worker --loglevel=info
+    command: celery -A app.worker.celery_app worker --loglevel=info # Указываем полный путь к app
     volumes:
       - ./app:/app
     environment:
+      # Переменные окружения для подключения к БД, Redis и API
       - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/moysklad
-      - REDIS_URL=redis://redis:6379/0
-      - MOYSKLAD_TOKEN=your_moysklad_token
+      - CELERY_BROKER_URL=redis://redis:6379/0 # Используем переменную, ожидаемую worker.py
+      - MOYSKLAD_TOKEN=${MOYSKLAD_TOKEN} # Лучше использовать переменные из .env
+      - MOYSKLAD_API_URL=${MOYSKLAD_API_URL}
+      - WC_API_URL=${WC_API_URL}
+      - WC_CONSUMER_KEY=${WC_CONSUMER_KEY}
+      - WC_CONSUMER_SECRET=${WC_CONSUMER_SECRET}
 
   beat:
     build: ./app
+    restart: always # Добавляем restart: always для beat
     depends_on:
-      - backend
+      - postgres # Зависит только от postgres и redis
       - redis
-    command: celery -A worker.app beat --loglevel=info
+    command: celery -A app.worker.celery_app beat --loglevel=info # Указываем полный путь к app
     volumes:
       - ./app:/app
     environment:
+      # Те же переменные, что и для celery worker
       - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/moysklad
-      - REDIS_URL=redis://redis:6379/0
-      - MOYSKLAD_TOKEN=your_moysklad_token
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - MOYSKLAD_TOKEN=${MOYSKLAD_TOKEN}
+      - MOYSKLAD_API_URL=${MOYSKLAD_API_URL}
+      - WC_API_URL=${WC_API_URL}
+      - WC_CONSUMER_KEY=${WC_CONSUMER_KEY}
+      - WC_CONSUMER_SECRET=${WC_CONSUMER_SECRET}
 
   postgres:
     image: postgres:15

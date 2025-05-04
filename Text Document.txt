@@ -1,10 +1,22 @@
 # Файлы проекта
 
 /app
-├── db.py               # Подключение к PostgreSQL (asyncpg)
-├── main.py             # FastAPI приложение (можно добавить ручки для ручного триггера или отладки)
-├── models.py           # Модель pending_sync
+├── db.py               # Подключение к PostgreSQL (asyncpg) с пулом соединений
+├── models.py           # Модель Pydantic для pending_sync
 ├── tasks
-│   └── orders.py       # Основная логика: синхронизация, повторная отправка, сохранение в очередь
-├── worker.py           # Настройка Celery
-├── requirements.txt    # Зависимости (fastapi, celery, httpx, asyncpg, etc.)
+│   ├── orders.py       # Логика синхронизации заказов, retry, DLQ
+│   ├── status_sync.py  # Логика синхронизации статусов
+│   └── __init__.py     # Маркер пакета tasks
+├── utils
+│   ├── woocommerce.py  # Вспомогательные функции для WooCommerce API
+│   ├── moysklad.py     # Вспомогательные функции для МойСклад API
+│   └── __init__.py     # Маркер пакета utils
+├── worker.py           # Настройка Celery, управление пулом БД, логирование
+├── requirements.txt    # Зависимости Python
+├── app_worker.log      # Файл логов (создается при запуске)
+
+# Другие файлы
+/1.sql                  # SQL скрипт для создания таблиц (включая dead_letter_sync)
+/docker-compose.yml     # Конфигурация Docker Compose
+/.env.example           # Пример файла с переменными окружения
+/func.php               # PHP код для отображения UUID в WC админке

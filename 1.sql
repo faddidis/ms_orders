@@ -18,12 +18,6 @@ CREATE TABLE status_mapping (
 
 -- migrations/001_create_status_mapping.sql
 
-CREATE TABLE IF NOT EXISTS status_mapping (
-    id SERIAL PRIMARY KEY,
-    moysklad_status TEXT NOT NULL UNIQUE,
-    woocommerce_status TEXT NOT NULL
-);
-
 -- Примеры соответствий (можно кастомизировать)
 INSERT INTO status_mapping (moysklad_status, woocommerce_status)
 VALUES 
@@ -33,3 +27,13 @@ VALUES
     ('Отменен', 'cancelled'),
     ('Подтверждён', 'on-hold')
 ON CONFLICT DO NOTHING;
+
+-- Таблица для "мертвых" заказов, которые не удалось обработать
+CREATE TABLE dead_letter_sync (
+    id SERIAL PRIMARY KEY,
+    original_pending_id INTEGER, -- Опционально: ID из исходной таблицы pending_sync
+    order_id INTEGER NOT NULL,
+    order_payload JSONB NOT NULL,
+    final_error_message TEXT,
+    failed_at TIMESTAMP DEFAULT now()
+);
