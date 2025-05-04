@@ -1,0 +1,10 @@
+# Файлы проекта
+
+/app
+├── db.py               # Подключение к PostgreSQL (asyncpg)
+├── main.py             # FastAPI приложение (можно добавить ручки для ручного триггера или отладки)
+├── models.py           # Модель pending_sync
+├── tasks
+│   └── orders.py       # Основная логика: синхронизация, повторная отправка, сохранение в очередь
+├── worker.py           # Настройка Celery
+├── requirements.txt    # Зависимости (fastapi, celery, httpx, asyncpg, etc.)
