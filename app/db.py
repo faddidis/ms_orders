@@ -1,6 +1,7 @@
 import asyncpg
 import os
 import logging
+import json # Добавляем импорт json
 
 logger = logging.getLogger(__name__)
 
@@ -42,6 +43,27 @@ def get_connection():
         raise ConnectionError("Database pool not available")
     # Возвращаем контекстный менеджер соединения из пула
     return DB_POOL.acquire()
+
+# Сохранение в таблицу отложенной синхронизации
+async def save_to_pending(order_id: int, payload: dict, error: str = ""):
+    """Сохраняет заказ в таблицу pending_sync при ошибке."""
+    if not DB_POOL:
+        logger.error("Cannot save to pending: DB Pool is not initialized.")
+        return
+    try:
+        async with get_connection() as conn:
+            await conn.execute("""
+                INSERT INTO pending_sync (order_id, order_payload, error_message)
+                VALUES ($1, $2, $3)
+                ON CONFLICT (order_id) DO UPDATE SET
+                    order_payload = EXCLUDED.order_payload,
+                    error_message = EXCLUDED.error_message,
+                    retry_count = pending_sync.retry_count + 1,
+                    last_attempt = now();
+            """, order_id, json.dumps(payload), error)
+        logger.info(f"Order {order_id} saved/updated in pending_sync due to error: {error}")
+    except Exception as e:
+        logger.exception(f"Failed to save order {order_id} to pending_sync: {e}")
 
 # Функция init_db удалена, так как схема управляется миграциями/SQL скриптами
 # async def init_db():

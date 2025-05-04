@@ -1,7 +1,0 @@
-fastapi
-uvicorn[standard]
-celery[redis]
-asyncpg
-httpx
-requests
-python-dotenv
